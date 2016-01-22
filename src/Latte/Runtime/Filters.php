@@ -441,4 +441,12 @@ class Filters
 		return $s;
 	}
 
+	// This is used to ensure valid HTML attribute names
+	public static function escapeName($name) {
+		$leadingchar = "/^[^:_\\p{L}]+/u"; # the first letter can be colon underscore, or a unicode letter
+		$namechar = "/[^-:_.\\p{N}\\p{L}\\p{M}]/u"; # letters or numbers or diacritics
+		$cleaned = preg_replace($leadingchar, '', $name);
+		$cleaned = preg_replace($namechar, '', $cleaned);
+		return $cleaned ?: "invalid";
+	}
 }

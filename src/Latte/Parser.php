@@ -172,27 +172,31 @@ class Parser
 		$matches = $this->match('~
 			(?P<end>\ ?/?>)([ \t]*\n)?|  ##  end of HTML tag
 			(?P<macro>' . $this->delimiters[0] . ')|
-			\s*(?P<attr>[^\s/>={]+)(?:\s*=\s*(?P<value>["\']|[^\s/>{]+))? ## beginning of HTML attribute
+			\s*(?P<attr>[^\s/>={]+)(?:\s*=\s*(?P<value>["\']|[^\s/>{]+))?| ## beginning of HTML attribute
+			\s*=\s*(?P<justvalue>["\']|[^\s/>{]+) ## beginning of HTML attribute, name is already parsed
 		~xsi');
 
 		if (!empty($matches['end'])) { // end of HTML tag />
 			$this->addToken(Token::HTML_TAG_END, $matches[0]);
 			$this->setContext(!$this->xmlMode && in_array($this->lastHtmlTag, ['script', 'style'], TRUE) ? self::CONTEXT_CDATA : self::CONTEXT_HTML_TEXT);
 
-		} elseif (isset($matches['attr']) && $matches['attr'] !== '') { // HTML attribute
+		} elseif (isset($matches['attr']) && $matches['attr'] !== '' ||
+				isset($matches['justvalue']) && $matches['justvalue'] !== '') { // HTML attribute
+			$attrValue = isset($matches['value']) ? $matches['value'] : (isset($matches['justvalue']) ? $matches['justvalue'] : '');
+			$attrName = isset($matches['attr']) ? $matches['attr'] : '';
 			$token = $this->addToken(Token::HTML_ATTRIBUTE, $matches[0]);
-			$token->name = $matches['attr'];
-			$token->value = isset($matches['value']) ? $matches['value'] : '';
+			$token->name = $attrName;
+			$token->value = $attrValue;
 
-			if ($token->value === '"' || $token->value === "'") { // attribute = "'
-				if (strncmp($token->name, self::N_PREFIX, strlen(self::N_PREFIX)) === 0) {
+			if ($attrValue === '"' || $attrValue === "'") { // attribute = "'
+				if (strncmp($attrName, self::N_PREFIX, strlen(self::N_PREFIX)) === 0) {
 					$token->value = '';
-					if ($m = $this->match('~(.*?)' . $matches['value'] . '~xsi')) {
+					if ($m = $this->match('~(.*?)' . $attrValue . '~xsi')) {
 						$token->value = $m[1];
 						$token->text .= $m[0];
 					}
 				} else {
-					$this->setContext(self::CONTEXT_HTML_ATTRIBUTE, $matches['value']);
+					$this->setContext(self::CONTEXT_HTML_ATTRIBUTE, $attrValue);
 				}
 			}
 		} else {
