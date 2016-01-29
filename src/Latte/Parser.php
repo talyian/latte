@@ -175,28 +175,27 @@ class Parser
 			\s*(?P<attr>[^\s/>={]+)(?:\s*=\s*(?P<value>["\']|[^\s/>{]+))?| ## beginning of HTML attribute
 			\s*=\s*(?P<justvalue>["\']|[^\s/>{]+) ## beginning of HTML attribute, name is already parsed
 		~xsi');
+		if (!isset($matches['justvalue'])) $matches['justvalue'] = null;
 
 		if (!empty($matches['end'])) { // end of HTML tag />
 			$this->addToken(Token::HTML_TAG_END, $matches[0]);
 			$this->setContext(!$this->xmlMode && in_array($this->lastHtmlTag, ['script', 'style'], TRUE) ? self::CONTEXT_CDATA : self::CONTEXT_HTML_TEXT);
-
 		} elseif (isset($matches['attr']) && $matches['attr'] !== '' ||
 				isset($matches['justvalue']) && $matches['justvalue'] !== '') { // HTML attribute
-			$attrValue = isset($matches['value']) ? $matches['value'] : (isset($matches['justvalue']) ? $matches['justvalue'] : '');
+			$matches['value'] = $matches['value'] ?: $matches['justvalue'] ?: '';
 			$attrName = isset($matches['attr']) ? $matches['attr'] : '';
 			$token = $this->addToken(Token::HTML_ATTRIBUTE, $matches[0]);
 			$token->name = $attrName;
-			$token->value = $attrValue;
-
-			if ($attrValue === '"' || $attrValue === "'") { // attribute = "'
+			$token->value = $matches['value'];
+			if ($matches['value'] === '"' || $matches['value'] === "'") { // attribute = "'
 				if (strncmp($attrName, self::N_PREFIX, strlen(self::N_PREFIX)) === 0) {
 					$token->value = '';
-					if ($m = $this->match('~(.*?)' . $attrValue . '~xsi')) {
+					if ($m = $this->match('~(.*?)' . $matches['value'] . '~xsi')) {
 						$token->value = $m[1];
 						$token->text .= $m[0];
 					}
 				} else {
-					$this->setContext(self::CONTEXT_HTML_ATTRIBUTE, $attrValue);
+					$this->setContext(self::CONTEXT_HTML_ATTRIBUTE, $matches['value']);
 				}
 			}
 		} else {
