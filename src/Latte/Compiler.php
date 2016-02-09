@@ -563,7 +563,10 @@ class Compiler
 	 * @return MacroNode
 	 * @internal
 	 */
-	public function expandMacro($name, $args, $modifiers = NULL, $nPrefix = NULL)
+	public function expandMacro($name, $args, $modifiers = NULL, $nPrefix = NULL) {
+        return $this->expandMacro2($name, $args, $modifiers, $nPrefix, $this->getContext());
+    }
+    function expandMacro2($name, $args, $modifiers, $nPrefix, $context)
 	{
 		$inScript = in_array($this->context[0], [self::CONTENT_JS, self::CONTENT_CSS], TRUE);
 
@@ -572,24 +575,34 @@ class Compiler
 			throw new CompileException("Unknown macro {{$name}}$hint" . ($inScript ? ' (in JavaScript or CSS, try to put a space after bracket or use n:syntax=off)' : ''));
 		}
 
-		if (strpbrk($name, '=~%^&_')) {
-			if ($this->context[1] === self::CONTENT_URL) {
-				$modifiers = preg_replace('#\|nosafeurl\s?(?=\||\z)#i', '', $modifiers, -1, $found);
-				if (!$found && !preg_match('#\|datastream(?=\s|\||\z)#i', $modifiers)) {
-					$modifiers .= '|safeurl';
-				}
-			}
+        $cc = $context ?: [];
+        $currentcontext = array_shift($cc);
+        if ($cc == "pickle") {
+            $modifiers = "";
+            $node = $this->expandMacro2($name, $args, $modifiers, $nPrefix, $cc);
+            return $node;
+        } else {
 
-			$modifiers = preg_replace('#\|noescape\s?(?=\||\z)#i', '', $modifiers, -1, $found);
-			if (!$found) {
-				$modifiers .= '|escape';
-			}
+            if (strpbrk($name, '=~%^&_')) {
+                if ($this->context[1] === self::CONTENT_URL) {
+                    $modifiers = preg_replace('#\|nosafeurl\s?(?=\||\z)#i', '', $modifiers, -1, $found);
+                    if (!$found && !preg_match('#\|datastream(?=\s|\||\z)#i', $modifiers)) {
+                        $modifiers .= '|safeurl';
+                    }
+                }
 
-			if (!$found && $inScript && $name === '=' && preg_match('#["\'] *\z#', $this->tokens[$this->position - 1]->text)) {
-				throw new CompileException("Do not place {$this->tokens[$this->position]->text} inside quotes.");
-			}
-		}
+                $modifiers = preg_replace('#\|noescape\s?(?=\||\z)#i', '', $modifiers, -1, $found);
+                if (!$found) {
+                    $modifiers .= '|escape';
+                }
 
+                if (!$found && $inScript && $name === '=' && preg_match('#["\'] *\z#', $this->tokens[$this->position - 1]->text)) {
+                    throw new CompileException("Do not place {$this->tokens[$this->position]->text} inside quotes.");
+                }
+            }
+
+
+        }
 		foreach (array_reverse($this->macros[$name]) as $macro) {
 			$node = new MacroNode($macro, $name, $args, $modifiers, $this->macroNode, $this->htmlNode, $nPrefix);
 			if ($macro->nodeOpened($node) !== FALSE) {
