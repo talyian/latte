@@ -30,6 +30,7 @@ class Parser extends Object
 		'latte' => array('\\{(?![\\s\'"{}])', '\\}'), // {...}
 		'double' => array('\\{\\{(?![\\s\'"{}])', '\\}\\}'), // {{...}}
 		'asp' => array('<%\s*', '\s*%>'), /* <%...%> */
+        'double-angle' => array('<<\s*', '\s*>>'), /* << .. >> */
 		'python' => array('\\{[{%]\s*', '\s*[%}]\\}'), // {% ... %} | {{ ... }}
 		'off' => array('[^\x00-\xFF]', ''),
 	);

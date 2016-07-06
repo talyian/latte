@@ -24,6 +24,12 @@
 {{/foreach}}
 </ul>
 
+<ul n:syntax="double-angle">
+<<foreach $people as $person>>
+	<li><<$person |upper>></li>
+<</foreach>>
+</ul>
+
 <p n:syntax="">Default: {$person}</p>
 
 <p n:syntax="latte">Default: {$person}</p>
