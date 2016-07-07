@@ -443,6 +443,7 @@ class Filters
 
 	// This is used to ensure valid HTML attribute names
 	public static function escapeName($name) {
+		if (!$name) return "";
 		$leadingchar = "/^[^:_\\p{L}]+/u"; # the first letter can be colon underscore, or a unicode letter
 		$namechar = "/[^-:_.\\p{N}\\p{L}\\p{M}]/u"; # letters or numbers or diacritics
 		$cleaned = preg_replace($leadingchar, '', $name);
