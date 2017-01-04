@@ -126,7 +126,23 @@ class Filters
 	 */
 	public static function safeUrl($s)
 	{
-		return preg_match('~^(?:(?:https?|ftp)://[^@]+(?:/.*)?|mailto:.+|[/?#].*|[^:]+)\z~i', $s) ? $s : '';
+		$s = trim($s);
+		$parts = parse_url(strtolower($s));
+		if (!$parts) {
+			return '';
+		}
+		if (isset($parts['scheme'])) {
+			if ($parts['scheme'] === 'mailto') {
+				return $s;
+			}
+			if (!empty($parts['user'])) {
+				return '';
+			}
+			if (!in_array($parts['scheme'], ['http', 'https', 'ftp', 'mailto'])) {
+				return '';
+			}
+		}
+		return $s;
 	}
 
 
